@@ -1,0 +1,1 @@
+(function(blocks,element){blocks.registerBlockType('onecomm/product-grid',{edit:function(){return element.createElement('div',{className:'onecomm-preview'},'1Ecomm product grid renders on the server.');},save:function(){return null;}});})(window.wp.blocks,window.wp.element);
