@@ -1,0 +1,1 @@
+{"apiVersion":3,"name":"onecomm/product-grid","title":"1Ecomm Product Grid","category":"widgets","icon":"store","attributes":{"limit":{"type":"number","default":12}},"editorScript":"file:./editor.js"}
