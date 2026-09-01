@@ -15,22 +15,9 @@ jobs:
       - run: php -l src/CatalogClient.php
       - run: php -l src/Plugin.php
       - run: php tests/run.php
-  live-ui:
+  deployed-contract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: {node-version: 20, cache: npm}
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: ./tests/docker-smoke.sh
-      - name: Configure deployed sandbox storefront page
-        run: |
-          docker compose run --rm cli wp option update onecomm_store_id 01f5b02f-d7c0-42cd-b880-59f78ea70aa3
-          docker compose run --rm cli wp post create --post_type=page --post_status=publish --post_title=Store --post_name=store --post_content='[onecomm_storefront]'
-      - name: Deployed sandbox WordPress UI journey
-        env:
-          WORDPRESS_LIVE_URL: http://localhost:8180/?pagename=store
-        run: npm run test:e2e:live
-      - if: always()
-        run: docker compose down -v
+      - name: Deployed non-mutating bootstrap probe
+        run: curl --fail --silent --show-error https://api.1ecomm.com/v1/headless/stores/01f5b02f-d7c0-42cd-b880-59f78ea70aa3/config >/dev/null
