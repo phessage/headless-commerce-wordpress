@@ -28,4 +28,7 @@ $assert(($payment['data']['selectedPaymentMethodId'] ?? null) !== null, 'payment
 $placed = $client->placeOrder($token, 'wordpress-live-' . bin2hex(random_bytes(16)));
 $assert(($placed['data']['requiresPayment'] ?? true) === false, 'fixture order unexpectedly requires hosted payment');
 $assert(($placed['data']['status'] ?? null) === 'pending', 'pending order was not created');
-echo 'WordPress deployed order journey passed: ' . ($placed['data']['orderNumber'] ?? 'unknown') . "\n";
+$orderNumber = (string) ($placed['data']['orderNumber'] ?? '');
+$lookup = $client->lookupOrder($orderNumber, 'wordpress-live@example.test');
+$assert(($lookup['data']['orderNumber'] ?? null) === $orderNumber, 'created order could not be reopened');
+echo 'WordPress deployed create/reopen journey passed: ' . $orderNumber . "\n";

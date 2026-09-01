@@ -6,6 +6,7 @@ final class Plugin
 {
     private const COOKIE = 'onecomm_cart_token';
     private const NONCE = 'onecomm_cart_mutation';
+    private const LOOKUP_COOKIE = 'onecomm_lookup_session';
 
     public static function boot(): void
     {
@@ -57,12 +58,14 @@ final class Plugin
         $cart = $token === null ? [] : ($client->cart($token)['data'] ?? []);
         $checkout = $token === null ? [] : ($client->checkout($token)['data'] ?? []);
         $confirmation = $token === null ? null : get_transient(self::confirmationKey($token));
+        $lookupSession = self::lookupSession();
+        $lookup = $lookupSession === null ? null : get_transient(self::lookupKey($lookupSession));
         $html = '<section class="onecomm-storefront"><h2>' . esc_html__('Products', 'onecomm') . '</h2><div class="onecomm-grid">';
         foreach ($client->products($limit) as $item) $html .= self::productCard($item, true);
         $html .= '</div>' . self::cartMarkup(is_array($cart) ? $cart : []);
         if (is_array($confirmation)) $html .= '<section class="onecomm-order-confirmation" aria-label="Order confirmation"><h2>' . esc_html(sprintf(__('Order %s placed', 'onecomm'), (string) ($confirmation['orderNumber'] ?? ''))) . '</h2><p>' . esc_html(sprintf(__('Status: %s', 'onecomm'), (string) ($confirmation['status'] ?? ''))) . '</p><p>' . esc_html(sprintf(__('Payment: %s', 'onecomm'), (string) ($confirmation['paymentStatus'] ?? ''))) . '</p></section>';
         elseif (($cart['items'] ?? []) !== []) $html .= self::checkoutMarkup(is_array($checkout) ? $checkout : []);
-        return $html . '</section>';
+        return $html . self::lookupMarkup(is_array($lookup) ? $lookup : null) . '</section>';
     }
 
     public static function handleCartAction(): void
@@ -71,7 +74,15 @@ final class Plugin
         $operation = sanitize_key((string) ($_POST['operation'] ?? ''));
         $client = self::client();
         $token = self::cartToken();
-        if ($operation === 'add') {
+        if ($operation === 'lookup') {
+            $number = mb_substr(sanitize_text_field((string) ($_POST['order_number'] ?? '')), 0, 64);
+            $email = sanitize_email((string) ($_POST['order_email'] ?? ''));
+            $result = $client->lookupOrder($number, $email)['data'] ?? null;
+            if (!is_array($result)) self::redirect('not-found');
+            $session = self::lookupSession() ?? wp_generate_uuid4();
+            self::setLookupSession($session);
+            set_transient(self::lookupKey($session), $result, 10 * MINUTE_IN_SECONDS);
+        } elseif ($operation === 'add') {
             if ($token === null) {
                 $created = $client->createCart();
                 $candidate = (string) ($created['cartToken'] ?? '');
@@ -149,6 +160,14 @@ final class Plugin
         return '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="onecomm_cart"><input type="hidden" name="operation" value="' . esc_attr($operation) . '">' . wp_nonce_field(self::NONCE, '_wpnonce', true, false) . $contents . '</form>';
     }
 
+    private static function lookupMarkup(?array $lookup): string
+    {
+        $html = '<section class="onecomm-order-lookup"><h2>' . esc_html__('Check an order', 'onecomm') . '</h2><p>' . esc_html__('Use the order number and checkout email. No account is required.', 'onecomm') . '</p>';
+        $html .= self::form('lookup', '<label>' . esc_html__('Order number', 'onecomm') . ' <input type="text" name="order_number" required maxlength="64"></label><label>' . esc_html__('Order email', 'onecomm') . ' <input type="email" name="order_email" required maxlength="254"></label><button type="submit">' . esc_html__('Check order status', 'onecomm') . '</button>');
+        if ($lookup !== null) $html .= '<div class="onecomm-order-result" aria-label="Order lookup result"><h3>' . esc_html(sprintf(__('Order %s', 'onecomm'), (string) ($lookup['orderNumber'] ?? ''))) . '</h3><p>' . esc_html(sprintf(__('Status: %s', 'onecomm'), (string) ($lookup['status'] ?? ''))) . '</p><p>' . esc_html(sprintf(__('Payment: %s', 'onecomm'), (string) ($lookup['paymentStatus'] ?? ''))) . '</p><p>' . esc_html(sprintf(__('Items: %d', 'onecomm'), (int) ($lookup['itemCount'] ?? 0))) . '</p></div>';
+        return $html . '</section>';
+    }
+
     private static function checkoutInput(): array
     {
         $value = static fn (string $key, int $max): string => mb_substr(sanitize_text_field((string) ($_POST[$key] ?? '')), 0, $max);
@@ -171,10 +190,17 @@ final class Plugin
     private static function isCartToken(string $v): bool { return preg_match('/^hc_[A-Za-z0-9_-]{43}$/D', $v) === 1; }
     private static function intentKey(string $token): string { return 'onecomm_order_intent_' . hash('sha256', $token); }
     private static function confirmationKey(string $token): string { return 'onecomm_order_confirmation_' . hash('sha256', $token); }
+    private static function lookupKey(string $session): string { return 'onecomm_order_lookup_' . hash('sha256', $session); }
+    private static function lookupSession(): ?string { $v = (string) ($_COOKIE[self::LOOKUP_COOKIE] ?? ''); return preg_match('/^[0-9a-f-]{36}$/Di', $v) === 1 ? $v : null; }
     private static function setCartToken(string $token): void
     {
         setcookie(self::COOKIE, $token, ['expires' => time() + DAY_IN_SECONDS, 'path' => COOKIEPATH ?: '/', 'domain' => COOKIE_DOMAIN, 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Lax']);
         $_COOKIE[self::COOKIE] = $token;
+    }
+    private static function setLookupSession(string $session): void
+    {
+        setcookie(self::LOOKUP_COOKIE, $session, ['expires' => time() + 10 * MINUTE_IN_SECONDS, 'path' => COOKIEPATH ?: '/', 'domain' => COOKIE_DOMAIN, 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Lax']);
+        $_COOKIE[self::LOOKUP_COOKIE] = $session;
     }
     private static function redirect(string $state): never
     {
