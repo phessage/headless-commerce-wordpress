@@ -4,11 +4,11 @@ Installable preview plugin providing a server-rendered product-grid block, a `[o
 
 For normal setup, save only `onecomm_store_id` (the site's UUID). The plugin resolves and caches the public runtime document. Direct API URL/publishable-key options remain as a compatibility escape hatch for isolated development.
 
-The storefront stops at checkout preparation. It does not create an order, authorize or capture payment, merge a customer cart, or subscribe to webhooks.
+The storefront can place a pending order when the selected method explicitly supports non-hosted placement. It retains one server-side intent key across an uncertain retry and never authorizes or captures payment. Customer cart merge and webhooks remain outside the preview.
 
 Run `php tests/run.php` for contract/security tests. `docker compose up -d` plus `tests/docker-smoke.sh` performs an actual clean WordPress activation and rendered-shortcode probe with synthetic API data.
 
-From an installed WordPress CLI container, `wp eval-file wp-content/plugins/onecomm-headless/tests/live.php` runs a fail-closed deployed-fixture journey when `HEADLESS_API_URL` and `HEADLESS_PUBLISHABLE_KEY` are present. It creates an isolated guest cart and stops after checkout preparation and returned shipping/payment selection.
+From an installed WordPress CLI container, `wp eval-file wp-content/plugins/onecomm-headless/tests/live.php` runs a fail-closed deployed-fixture journey. Set `HEADLESS_STORE_ID` to override the maintained fixture store. It creates an isolated guest cart, selects server-returned shipping/payment choices, and creates a pending non-hosted order with a fresh idempotency key.
 
 `WORDPRESS_LIVE_URL=http://localhost:8180/?page_id=<shop-page-id> npm run test:e2e:live` drives the actual WordPress page through Playwright. The test requires a clean site whose page contains `[onecomm_storefront]` and whose plugin options point at the deployed fixture API.
 

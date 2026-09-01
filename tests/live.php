@@ -25,4 +25,7 @@ $shipping = $client->selectShippingMethod($token, (string) $data['shippingOption
 $payment = $client->selectPaymentMethod($token, (string) $data['paymentMethods'][0]['id']);
 $assert(($shipping['data']['selectedShippingMethodId'] ?? null) !== null, 'shipping selection missing');
 $assert(($payment['data']['selectedPaymentMethodId'] ?? null) !== null, 'payment selection missing');
-echo "WordPress deployed checkout-preparation journey passed\n";
+$placed = $client->placeOrder($token, 'wordpress-live-' . bin2hex(random_bytes(16)));
+$assert(($placed['data']['requiresPayment'] ?? true) === false, 'fixture order unexpectedly requires hosted payment');
+$assert(($placed['data']['status'] ?? null) === 'pending', 'pending order was not created');
+echo 'WordPress deployed order journey passed: ' . ($placed['data']['orderNumber'] ?? 'unknown') . "\n";

@@ -65,11 +65,16 @@ final class CatalogClient
     {
         return $this->request('PUT', '/v1/headless/carts/current/checkout/payment-method', ['id' => $id], $token);
     }
+    public function placeOrder(string $token, string $idempotencyKey): array
+    {
+        $key = trim($idempotencyKey); if ($key === '' || strlen($key) > 120) return [];
+        return $this->request('POST', '/v1/headless/carts/current/checkout/order', null, $token, ['Idempotency-Key' => $key]);
+    }
 
-    private function request(string $method, string $path, ?array $body = null, ?string $token = null): array
+    private function request(string $method, string $path, ?array $body = null, ?string $token = null, array $extraHeaders = []): array
     {
         if (!str_starts_with($this->key, 'pk_') || !str_starts_with($this->baseUrl, 'https://') || ($token !== null && !$this->validToken($token))) return [];
-        $args = ['method' => $method, 'timeout' => 8, 'redirection' => 0, 'headers' => ['Accept' => 'application/json', 'x-publishable-key' => $this->key]];
+        $args = ['method' => $method, 'timeout' => 8, 'redirection' => 0, 'headers' => ['Accept' => 'application/json', 'x-publishable-key' => $this->key] + $extraHeaders];
         if ($token !== null) $args['headers']['x-cart-token'] = $token;
         if ($body !== null) {
             $args['headers']['Content-Type'] = 'application/json';
