@@ -20,10 +20,13 @@ $client->selectPaymentMethod($token, $choice); $last = $GLOBALS['requests'][arra
 $GLOBALS['remote'] = $response(['data' => ['orderNumber' => 'ORD1', 'requiresPayment' => false]], 201); $placed = $client->placeOrder($token, 'wordpress-intent-1'); $last = $GLOBALS['requests'][array_key_last($GLOBALS['requests'])];
 $assert(($placed['data']['orderNumber'] ?? null) === 'ORD1', 'order failed'); $assert(str_ends_with($last[0], '/checkout/order') && $last[1]['method'] === 'POST', 'order route failed'); $assert(($last[1]['headers']['Idempotency-Key'] ?? null) === 'wordpress-intent-1', 'order intent missing');
 $before = count($GLOBALS['requests']); $assert($client->placeOrder($token, '') === [] && count($GLOBALS['requests']) === $before, 'empty order intent reached transport');
+$GLOBALS['remote'] = $response(['data' => ['orderNumber' => 'ORD1', 'status' => 'pending', 'paymentStatus' => 'pending', 'itemCount' => 1]], 201); $lookedUp = $client->lookupOrder(' ORD1 ', ' shopper@example.test '); $last = $GLOBALS['requests'][array_key_last($GLOBALS['requests'])];
+$assert(($lookedUp['data']['orderNumber'] ?? null) === 'ORD1', 'lookup failed'); $assert(str_ends_with($last[0], '/v1/headless/orders/lookup') && $last[1]['method'] === 'POST', 'lookup route failed'); $assert(json_decode($last[1]['body'], true) === ['orderNumber' => 'ORD1', 'email' => 'shopper@example.test'], 'lookup body failed'); $assert(!isset($last[1]['headers']['x-cart-token']), 'lookup leaked cart token');
+$before = count($GLOBALS['requests']); $assert($client->lookupOrder('', 'shopper@example.test') === [] && count($GLOBALS['requests']) === $before, 'invalid lookup reached transport');
 $before = count($GLOBALS['requests']); $assert($client->cart('bad-token') === [] && count($GLOBALS['requests']) === $before, 'bad token reached transport');
 $assert((new CatalogClient('http://internal.test', 'pk_test'))->createCart() === [], 'non-TLS accepted'); $assert((new CatalogClient('https://sandbox.test', 'secret'))->products() === [], 'secret accepted');
 $GLOBALS['options'] = ['onecomm_api_url' => 'https://sandbox.test', 'onecomm_publishable_key' => 'pk_test_demo']; $GLOBALS['transients'] = [];
 $GLOBALS['remote'] = $response(['data' => [['id' => $uuid, 'name' => '<Pack>', 'description' => 'Trail & camp', 'available' => true, 'price' => ['amount' => '9.00', 'currency' => 'USD']]]]);
 $html = Plugin::renderStorefront(12); $assert(str_contains($html, '&lt;Pack&gt;') && str_contains($html, 'Trail &amp; camp') && !str_contains($html, '<Pack>'), 'unsafe output');
-$assert(str_contains($html, 'Add to cart') && str_contains($html, 'admin-post.php') && str_contains($html, '_wpnonce'), 'secure form missing');
+$assert(str_contains($html, 'Add to cart') && str_contains($html, 'Check order status') && str_contains($html, 'admin-post.php') && str_contains($html, '_wpnonce'), 'secure form missing');
 echo $count . " assertions passed\n";

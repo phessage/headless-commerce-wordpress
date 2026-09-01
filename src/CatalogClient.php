@@ -71,6 +71,13 @@ final class CatalogClient
         return $this->request('POST', '/v1/headless/carts/current/checkout/order', null, $token, ['Idempotency-Key' => $key]);
     }
 
+    public function lookupOrder(string $orderNumber, string $email): array
+    {
+        $number = trim($orderNumber); $address = sanitize_email($email);
+        if ($number === '' || $address === '' || strlen($number) > 64 || strlen($address) > 254) return [];
+        return $this->request('POST', '/v1/headless/orders/lookup', ['orderNumber' => $number, 'email' => $address]);
+    }
+
     private function request(string $method, string $path, ?array $body = null, ?string $token = null, array $extraHeaders = []): array
     {
         if (!str_starts_with($this->key, 'pk_') || !str_starts_with($this->baseUrl, 'https://') || ($token !== null && !$this->validToken($token))) return [];

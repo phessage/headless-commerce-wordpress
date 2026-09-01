@@ -1,6 +1,6 @@
 # 1Ecomm Headless Commerce for WordPress
 
-This plugin lets a WordPress page sell products from a 1Ecomm store. It renders products, cart, guest checkout choices and a pending non-hosted order confirmation on the server. It never charges a card or wallet.
+This plugin lets a WordPress page sell products from a 1Ecomm store. It renders products, cart, guest checkout choices, a pending non-hosted order confirmation, and account-free return-order lookup on the server. It never charges a card or wallet.
 
 ## Set it up
 
@@ -18,4 +18,4 @@ docker compose up -d
 
 Run `php tests/run.php` for contract/security tests. In the WordPress CLI container, `wp eval-file wp-content/plugins/onecomm-headless/tests/live.php` creates an isolated fixture cart and pending bank-transfer test order. A real page can be driven with `WORDPRESS_LIVE_URL=http://localhost:8180/?page_id=<id> npm run test:e2e:live`. These tests do not move money, and demos must never clone production customer data.
 
-The cart token stays in an HttpOnly, SameSite=Lax cookie. Browser changes use a fixed nonce-protected WordPress action. The order intent is retained server-side across uncertainty. Never enter an administrator password or secret API key. Customer-cart merge, webhooks, card/wallet payment and payment capture remain outside this preview.
+The cart token and short-lived order-lookup session stay in HttpOnly, SameSite=Lax cookies. Browser changes use a fixed nonce-protected WordPress action, so the checkout email is posted to WordPress and is not placed in the page URL. The order intent is retained server-side across uncertainty. Never enter an administrator password or secret API key. Customer-cart merge, webhooks, card/wallet payment and payment capture remain outside this preview.

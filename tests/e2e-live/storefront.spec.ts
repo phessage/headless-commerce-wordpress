@@ -31,5 +31,14 @@ test('WordPress UI completes a deployed non-hosted order', async ({ page }) => {
   const confirmation = page.locator('.onecomm-order-confirmation');
   await expect(confirmation).toContainText(/Order ORD\d+ placed/);
   await expect(page.locator('.onecomm-order-confirmation')).toContainText('Payment: pending');
-  console.log(`WordPress live UI ${await confirmation.getByRole('heading').innerText()}`);
+  const heading = await confirmation.getByRole('heading').innerText();
+  const orderNumber = heading.match(/ORD\d+/)?.[0];
+  expect(orderNumber).toBeTruthy();
+  await page.reload();
+  await page.getByLabel('Order number').fill(orderNumber!);
+  await page.getByLabel('Order email').fill('wordpress-browser@example.test');
+  await page.getByRole('button', { name: 'Check order status' }).click();
+  await expect(page.locator('.onecomm-order-result')).toContainText(`Order ${orderNumber}`);
+  await expect(page.locator('.onecomm-order-result')).toContainText('Payment: pending');
+  console.log(`WordPress live UI create/reopen ${orderNumber}`);
 });
