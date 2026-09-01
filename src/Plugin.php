@@ -164,7 +164,7 @@ final class Plugin
     {
         $html = '<section class="onecomm-order-lookup"><h2>' . esc_html__('Check an order', 'onecomm') . '</h2><p>' . esc_html__('Use the order number and checkout email. No account is required.', 'onecomm') . '</p>';
         $html .= self::form('lookup', '<label>' . esc_html__('Order number', 'onecomm') . ' <input type="text" name="order_number" required maxlength="64"></label><label>' . esc_html__('Order email', 'onecomm') . ' <input type="email" name="order_email" required maxlength="254"></label><button type="submit">' . esc_html__('Check order status', 'onecomm') . '</button>');
-        if ($lookup !== null) $html .= '<div class="onecomm-order-result" aria-label="Order lookup result"><h3>' . esc_html(sprintf(__('Order %s', 'onecomm'), (string) ($lookup['orderNumber'] ?? ''))) . '</h3><p>' . esc_html(sprintf(__('Status: %s', 'onecomm'), (string) ($lookup['status'] ?? ''))) . '</p><p>' . esc_html(sprintf(__('Payment: %s', 'onecomm'), (string) ($lookup['paymentStatus'] ?? ''))) . '</p><p>' . esc_html(sprintf(__('Items: %d', 'onecomm'), (int) ($lookup['itemCount'] ?? 0))) . '</p></div>';
+        if ($lookup !== null) $html .= '<div class="onecomm-order-result" aria-label="Order lookup result"><h3>' . esc_html(sprintf(__('Order %s', 'onecomm'), (string) ($lookup['orderNumber'] ?? ''))) . '</h3><p>' . esc_html(sprintf(__('Status: %s', 'onecomm'), (string) ($lookup['status'] ?? ''))) . '</p><p>' . esc_html(sprintf(__('Payment: %s', 'onecomm'), (string) ($lookup['paymentStatus'] ?? ''))) . '</p><p>' . esc_html(sprintf(__('Items: %d', 'onecomm'), count(is_array($lookup['items'] ?? null) ? $lookup['items'] : []))) . '</p></div>';
         return $html . '</section>';
     }
 
