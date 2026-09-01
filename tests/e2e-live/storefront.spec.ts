@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('WordPress UI completes deployed checkout preparation', async ({ page }) => {
+test('WordPress UI completes a deployed non-hosted order', async ({ page }) => {
   if (!process.env.WORDPRESS_LIVE_URL) throw new Error('WORDPRESS_LIVE_URL is required');
   await page.goto(process.env.WORDPRESS_LIVE_URL);
   await expect(page.getByRole('heading', { name: 'Products' })).toBeVisible();
@@ -26,5 +26,8 @@ test('WordPress UI completes deployed checkout preparation', async ({ page }) =>
   const paymentButton = page.locator('.onecomm-checkout h3', { hasText: 'Payment method' }).locator('xpath=following-sibling::form[1]').getByRole('button');
   await expect(paymentButton).toBeVisible();
   await paymentButton.click();
-  await expect(page.locator('.onecomm-readiness')).toContainText('Ready for application handoff');
+  await expect(page.locator('.onecomm-readiness')).toContainText('Checkout is prepared');
+  await page.getByRole('button', { name: 'Place pending order' }).click();
+  await expect(page.locator('.onecomm-order-confirmation')).toContainText(/Order ORD\d+ placed/);
+  await expect(page.locator('.onecomm-order-confirmation')).toContainText('Payment: pending');
 });

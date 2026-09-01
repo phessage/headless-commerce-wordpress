@@ -56,10 +56,12 @@ final class Plugin
         $token = self::cartToken();
         $cart = $token === null ? [] : ($client->cart($token)['data'] ?? []);
         $checkout = $token === null ? [] : ($client->checkout($token)['data'] ?? []);
+        $confirmation = $token === null ? null : get_transient(self::confirmationKey($token));
         $html = '<section class="onecomm-storefront"><h2>' . esc_html__('Products', 'onecomm') . '</h2><div class="onecomm-grid">';
         foreach ($client->products($limit) as $item) $html .= self::productCard($item, true);
         $html .= '</div>' . self::cartMarkup(is_array($cart) ? $cart : []);
-        if (($cart['items'] ?? []) !== []) $html .= self::checkoutMarkup(is_array($checkout) ? $checkout : []);
+        if (is_array($confirmation)) $html .= '<section class="onecomm-order-confirmation" aria-label="Order confirmation"><h2>' . esc_html(sprintf(__('Order %s placed', 'onecomm'), (string) ($confirmation['orderNumber'] ?? ''))) . '</h2><p>' . esc_html(sprintf(__('Status: %s', 'onecomm'), (string) ($confirmation['status'] ?? ''))) . '</p><p>' . esc_html(sprintf(__('Payment: %s', 'onecomm'), (string) ($confirmation['paymentStatus'] ?? ''))) . '</p></section>';
+        elseif (($cart['items'] ?? []) !== []) $html .= self::checkoutMarkup(is_array($checkout) ? $checkout : []);
         return $html . '</section>';
     }
 
@@ -88,6 +90,11 @@ final class Plugin
             $client->selectShippingMethod($token, self::selectionPost('selection_id'));
         } elseif ($token !== null && $operation === 'payment') {
             $client->selectPaymentMethod($token, self::uuidPost('selection_id'));
+        } elseif ($token !== null && $operation === 'order') {
+            $intentKey = self::intentKey($token); $intent = (string) get_transient($intentKey); if ($intent === '') { $intent = 'wordpress-' . wp_generate_uuid4(); set_transient($intentKey, $intent, 10 * MINUTE_IN_SECONDS); }
+            $placed = $client->placeOrder($token, $intent); $confirmation = $placed['data'] ?? null;
+            if (!is_array($confirmation) || ($confirmation['requiresPayment'] ?? true) !== false) self::redirect('error');
+            set_transient(self::confirmationKey($token), $confirmation, 10 * MINUTE_IN_SECONDS); delete_transient($intentKey);
         } else self::redirect('error');
         self::redirect('updated');
     }
@@ -130,7 +137,10 @@ final class Plugin
         foreach (($checkout['shippingOptions'] ?? []) as $o) $html .= self::form('shipping', '<input type="hidden" name="selection_id" value="' . esc_attr((string) ($o['id'] ?? '')) . '"><button type="submit">' . esc_html((string) ($o['name'] ?? '')) . ' — ' . esc_html((string) ($o['amount'] ?? '')) . ' ' . esc_html((string) ($o['currency'] ?? '')) . '</button>');
         $html .= '<h3>' . esc_html__('Payment method', 'onecomm') . '</h3>';
         foreach (($checkout['paymentMethods'] ?? []) as $m) $html .= self::form('payment', '<input type="hidden" name="selection_id" value="' . esc_attr((string) ($m['id'] ?? '')) . '"><button type="submit">' . esc_html((string) ($m['name'] ?? '')) . '</button>');
-        $status = ($checkout['ready'] ?? false) ? __('Ready for application handoff. No order or payment has been created.', 'onecomm') : __('More checkout details or selections are required.', 'onecomm');
+        $selected = null; foreach (($checkout['paymentMethods'] ?? []) as $method) if (($method['id'] ?? null) === ($checkout['selectedPaymentMethodId'] ?? null)) $selected = $method;
+        $canPlace = ($checkout['ready'] ?? false) && (($selected['capabilities']['requiresHostedCheckout'] ?? null) === false) && (($selected['capabilities']['canPlaceOrder'] ?? null) === true);
+        $status = ($checkout['ready'] ?? false) ? __('Checkout is prepared. Payment has not been collected.', 'onecomm') : __('More checkout details or selections are required.', 'onecomm');
+        if ($canPlace) $html .= self::form('order', '<button type="submit">' . esc_html__('Place pending order', 'onecomm') . '</button>');
         return $html . '<p class="onecomm-readiness">' . esc_html($status) . '</p></section>';
     }
 
@@ -159,6 +169,8 @@ final class Plugin
     }
     private static function cartToken(): ?string { $v = (string) ($_COOKIE[self::COOKIE] ?? ''); return self::isCartToken($v) ? $v : null; }
     private static function isCartToken(string $v): bool { return preg_match('/^hc_[A-Za-z0-9_-]{43}$/D', $v) === 1; }
+    private static function intentKey(string $token): string { return 'onecomm_order_intent_' . hash('sha256', $token); }
+    private static function confirmationKey(string $token): string { return 'onecomm_order_confirmation_' . hash('sha256', $token); }
     private static function setCartToken(string $token): void
     {
         setcookie(self::COOKIE, $token, ['expires' => time() + DAY_IN_SECONDS, 'path' => COOKIEPATH ?: '/', 'domain' => COOKIE_DOMAIN, 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Lax']);
