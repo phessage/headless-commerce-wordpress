@@ -1,17 +1,21 @@
 # 1Ecomm Headless Commerce for WordPress
 
-Installable preview plugin providing a server-rendered product-grid block, a `[onecomm_products]` catalog shortcode, and a `[onecomm_storefront]` shortcode with anonymous cart create/add/update/remove, guest checkout details, and selection from server-returned shipping/payment choices.
+This plugin lets a WordPress page sell products from a 1Ecomm store. It renders products, cart, guest checkout choices and a pending non-hosted order confirmation on the server. It never charges a card or wallet.
 
-For normal setup, save only `onecomm_store_id` (the site's UUID). The plugin resolves and caches the public runtime document. Direct API URL/publishable-key options remain as a compatibility escape hatch for isolated development.
+## Set it up
 
-The storefront can place a pending order when the selected method explicitly supports non-hosted placement. It retains one server-side intent key across an uncertain retry and never authorizes or captures payment. Customer cart merge and webhooks remain outside the preview.
+1. Install and activate the `onecomm-headless` plugin.
+2. Save your 1Ecomm store ID in the `onecomm_store_id` setting. A store ID is an identifier, not a password.
+3. Add `[onecomm_storefront]` to a page.
+4. Open the page. No API URL or publishable-key copy is required.
 
-Run `php tests/run.php` for contract/security tests. `docker compose up -d` plus `tests/docker-smoke.sh` performs an actual clean WordPress activation and rendered-shortcode probe with synthetic API data.
+For a clean local WordPress proof:
 
-From an installed WordPress CLI container, `wp eval-file wp-content/plugins/onecomm-headless/tests/live.php` runs a fail-closed deployed-fixture journey. Set `HEADLESS_STORE_ID` to override the maintained fixture store. It creates an isolated guest cart, selects server-returned shipping/payment choices, and creates a pending non-hosted order with a fresh idempotency key.
+```bash
+docker compose up -d
+./tests/docker-smoke.sh
+```
 
-`WORDPRESS_LIVE_URL=http://localhost:8180/?page_id=<shop-page-id> npm run test:e2e:live` drives the actual WordPress page through Playwright. The test requires a clean site whose page contains `[onecomm_storefront]` and whose plugin options point at the deployed fixture API.
+Run `php tests/run.php` for contract/security tests. In the WordPress CLI container, `wp eval-file wp-content/plugins/onecomm-headless/tests/live.php` creates an isolated fixture cart and pending bank-transfer test order. A real page can be driven with `WORDPRESS_LIVE_URL=http://localhost:8180/?page_id=<id> npm run test:e2e:live`. These tests do not move money, and demos must never clone production customer data.
 
-Credentials are stored as WordPress options and used only server-side. Use a public `pk_` key and an HTTPS API URL; never enter confidential credentials. Outbound calls use WordPress safe-request validation with redirects disabled.
-
-The anonymous `hc_` cart capability is held in a `HttpOnly`, `SameSite=Lax` cookie and is never rendered into HTML or URLs. Every browser mutation posts to a fixed `admin-post.php` action protected by a WordPress nonce. Mutations are attempted once only; after a network interruption, show an uncertain result instead of replaying the request.
+The cart token stays in an HttpOnly, SameSite=Lax cookie. Browser changes use a fixed nonce-protected WordPress action. The order intent is retained server-side across uncertainty. Never enter an administrator password or secret API key. Customer-cart merge, webhooks, card/wallet payment and payment capture remain outside this preview.

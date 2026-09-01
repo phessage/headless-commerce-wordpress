@@ -28,6 +28,8 @@ test('WordPress UI completes a deployed non-hosted order', async ({ page }) => {
   await paymentButton.click();
   await expect(page.locator('.onecomm-readiness')).toContainText('Checkout is prepared');
   await page.getByRole('button', { name: 'Place pending order' }).click();
-  await expect(page.locator('.onecomm-order-confirmation')).toContainText(/Order ORD\d+ placed/);
+  const confirmation = page.locator('.onecomm-order-confirmation');
+  await expect(confirmation).toContainText(/Order ORD\d+ placed/);
   await expect(page.locator('.onecomm-order-confirmation')).toContainText('Payment: pending');
+  console.log(`WordPress live UI ${await confirmation.getByRole('heading').innerText()}`);
 });
