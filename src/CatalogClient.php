@@ -4,6 +4,20 @@ namespace Phessage\OneComm;
 
 final class CatalogClient
 {
+    public static function forStore(string $storeId, string $bootstrapUrl = 'https://api.1ecomm.com'): self
+    {
+        $cache = 'onecomm_store_' . hash('sha256', $storeId . $bootstrapUrl);
+        $runtime = get_transient($cache);
+        if (!is_array($runtime)) {
+            $response = wp_safe_remote_request(rtrim($bootstrapUrl, '/') . '/v1/headless/stores/' . rawurlencode($storeId) . '/config', ['method' => 'GET', 'timeout' => 8, 'redirection' => 0, 'headers' => ['Accept' => 'application/json']]);
+            if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) throw new \RuntimeException('Headless store bootstrap failed');
+            $runtime = json_decode(wp_remote_retrieve_body($response), true)['data'] ?? [];
+            if (($runtime['storeId'] ?? null) !== $storeId || !str_starts_with((string) ($runtime['publishableKey'] ?? ''), 'pk_')) throw new \RuntimeException('Invalid headless store bootstrap response');
+            set_transient($cache, $runtime, 5 * MINUTE_IN_SECONDS);
+        }
+        return new self((string) $runtime['apiUrl'], (string) $runtime['publishableKey']);
+    }
+
     public function __construct(private string $baseUrl, private string $key) {}
 
     public function products(int $limit = 12): array
