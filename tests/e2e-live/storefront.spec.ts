@@ -40,5 +40,6 @@ test('WordPress UI completes a deployed non-hosted order', async ({ page }) => {
   await page.getByRole('button', { name: 'Check order status' }).click();
   await expect(page.locator('.onecomm-order-result')).toContainText(`Order ${orderNumber}`);
   await expect(page.locator('.onecomm-order-result')).toContainText('Payment: pending');
+  await expect(page.locator('.onecomm-order-result')).toContainText('Items: 1');
   console.log(`WordPress live UI create/reopen ${orderNumber}`);
 });
