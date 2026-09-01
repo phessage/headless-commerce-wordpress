@@ -4,6 +4,7 @@ use Phessage\OneComm\CatalogClient; use Phessage\OneComm\Plugin;
 $count = 0; $assert = function ($v, $m) use (&$count): void { $count++; if (!$v) throw new RuntimeException($m); };
 $response = static fn (array $body, int $status = 200): array => ['response' => ['code' => $status], 'body' => json_encode($body, JSON_THROW_ON_ERROR)];
 $uuid = '11111111-1111-4111-8111-111111111111'; $item = '22222222-2222-4222-8222-222222222222'; $choice = '33333333-3333-4333-8333-333333333333'; $token = 'hc_' . str_repeat('a', 43);
+$GLOBALS['remote'] = $response(['data' => ['storeId' => $uuid, 'apiUrl' => 'https://sandbox.test', 'publishableKey' => 'pk_test_demo', 'apiVersion' => 'v1', 'capabilities' => ['catalog', 'cart', 'checkout-preparation']]]); CatalogClient::forStore($uuid); $assert(str_ends_with($GLOBALS['requests'][0][0], "/v1/headless/stores/$uuid/config"), 'store bootstrap failed'); $GLOBALS['transients'] = []; $GLOBALS['requests'] = [];
 $client = new CatalogClient('https://sandbox.test', 'pk_test_demo');
 $GLOBALS['remote'] = $response(['data' => [['id' => $uuid, 'name' => '<Pack>', 'description' => 'Trail & camp', 'available' => true, 'price' => ['amount' => '9.00', 'currency' => 'USD']]]]);
 $assert(count($client->products(999)) === 1, 'catalog failed'); $assert(str_ends_with($GLOBALS['requests'][0][0], '/v1/headless/products?limit=100'), 'catalog route failed'); $assert($GLOBALS['requests'][0][1]['redirection'] === 0, 'redirect enabled');

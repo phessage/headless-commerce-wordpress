@@ -2,6 +2,8 @@
 
 Installable preview plugin providing a server-rendered product-grid block, a `[onecomm_products]` catalog shortcode, and a `[onecomm_storefront]` shortcode with anonymous cart create/add/update/remove, guest checkout details, and selection from server-returned shipping/payment choices.
 
+For normal setup, save only `onecomm_store_id` (the site's UUID). The plugin resolves and caches the public runtime document. Direct API URL/publishable-key options remain as a compatibility escape hatch for isolated development.
+
 The storefront stops at checkout preparation. It does not create an order, authorize or capture payment, merge a customer cart, or subscribe to webhooks.
 
 Run `php tests/run.php` for contract/security tests. `docker compose up -d` plus `tests/docker-smoke.sh` performs an actual clean WordPress activation and rendered-shortcode probe with synthetic API data.

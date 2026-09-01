@@ -19,6 +19,7 @@ final class Plugin
 
     public static function settings(): void
     {
+        register_setting('onecomm', 'onecomm_store_id', ['type' => 'string', 'sanitize_callback' => static fn ($v) => preg_match('/^[0-9a-f-]{36}$/Di', (string) $v) === 1 ? sanitize_text_field($v) : '']);
         register_setting('onecomm', 'onecomm_api_url', ['type' => 'string', 'sanitize_callback' => static fn ($v) => str_starts_with((string) $v, 'https://') ? esc_url_raw($v) : '']);
         register_setting('onecomm', 'onecomm_publishable_key', ['type' => 'string', 'sanitize_callback' => static fn ($v) => str_starts_with((string) $v, 'pk_') ? sanitize_text_field($v) : '']);
     }
@@ -93,6 +94,8 @@ final class Plugin
 
     private static function client(): CatalogClient
     {
+        $storeId = (string) get_option('onecomm_store_id', '');
+        if ($storeId !== '') return CatalogClient::forStore($storeId);
         return new CatalogClient((string) get_option('onecomm_api_url', ''), (string) get_option('onecomm_publishable_key', ''));
     }
 
