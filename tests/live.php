@@ -6,8 +6,9 @@ $storeId = getenv('HEADLESS_STORE_ID') ?: '01f5b02f-d7c0-42cd-b880-59f78ea70aa3'
 $assert = static function (bool $value, string $message): void {
     if (!$value) throw new RuntimeException($message);
 };
-$client = CatalogClient::forStore($storeId);
-$productId = '1f7884bd-759d-4f47-9fdb-c7ea3dd3a9ef';
+$key = getenv('HEADLESS_PUBLISHABLE_KEY') ?: '';
+$client = $key !== '' ? new CatalogClient(getenv('HEADLESS_API_URL') ?: 'https://api.1ecomm.com', $key) : CatalogClient::forStore($storeId);
+$productId = getenv('HEADLESS_PRODUCT_ID') ?: '1f7884bd-759d-4f47-9fdb-c7ea3dd3a9ef';
 $catalog = $client->products(100);
 $assert(in_array($productId, array_column($catalog, 'id'), true), 'sellable fixture missing');
 $created = $client->createCart();
