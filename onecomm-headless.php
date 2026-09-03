@@ -9,5 +9,6 @@
 declare(strict_types=1);
 if (!defined('ABSPATH')) exit;
 require_once __DIR__.'/src/CatalogClient.php';
+require_once __DIR__.'/src/WebhookVerifier.php';
 require_once __DIR__.'/src/Plugin.php';
 Phessage\OneComm\Plugin::boot();

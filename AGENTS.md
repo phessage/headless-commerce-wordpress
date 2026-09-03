@@ -8,6 +8,8 @@ This WordPress plugin renders the headless preview server-side. `onecomm_store_i
 
 Preserve WordPress nonce/CSRF validation, capability checks for settings, key-derived tenant scope, fixed upstream paths, cart HttpOnly/SameSite cookie, server-side lookup transient and neutral lookup failure. Never place order email, cart token or lookup proof in redirect URLs/logs. Guest order count is `count($order['items'])`; there is no `itemCount` field.
 
+Signed outbound webhooks are deployed. Receiver code verifies the exact raw body, timestamp, HMAC and delivery-ID binding before parsing or side effects, then atomically claims the delivery ID in durable storage.
+
 ## WordPress/PHP practices
 
 - Follow WordPress escaping by context (`esc_html`, `esc_attr`, `esc_url`) at output and sanitize/validate at input. SQL, if ever required, uses `$wpdb->prepare`.

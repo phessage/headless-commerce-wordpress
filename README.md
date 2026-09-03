@@ -20,4 +20,8 @@ Run `php tests/run.php` for contract/security tests. In the WordPress CLI contai
 
 CI now provisions a fresh WordPress runtime and an expiring 1Ecomm fixture for every run, executes the deployed catalog-to-order journey inside WordPress, and always revokes the temporary key and removes the containers. A missing allocator secret fails the gate instead of skipping it.
 
-The cart token and short-lived order-lookup session stay in HttpOnly, SameSite=Lax cookies. Browser changes use a fixed nonce-protected WordPress action, so the checkout email is posted to WordPress and is not placed in the page URL. The order intent is retained server-side across uncertainty. Never enter an administrator password or secret API key. Customer-cart merge, webhooks, card/wallet payment and payment capture remain outside this preview.
+The cart token and short-lived order-lookup session stay in HttpOnly, SameSite=Lax cookies. Browser changes use a fixed nonce-protected WordPress action, so the checkout email is posted to WordPress and is not placed in the page URL. The order intent is retained server-side across uncertainty. Never enter an administrator password or secret API key. Customer-cart merge and direct payment capture remain outside this preview.
+
+## Signed event receivers
+
+Server integrations pass the exact REST request body and headers to `Phessage\OneComm\WebhookVerifier::verify`. Keep the `whsec_` value outside themes and browser code. Supply a replay-claim callback backed by a database unique constraint on delivery ID, then dispatch WordPress actions only after verification and the atomic claim succeed. The helper rejects stale timestamps, changed bytes, header/body ID mismatches and duplicate deliveries.
