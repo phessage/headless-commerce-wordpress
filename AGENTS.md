@@ -19,6 +19,10 @@ Signed outbound webhooks are deployed. Receiver code verifies the exact raw body
 - Blocks and shortcodes must remain accessible without JavaScript; preserve labels, notices, focus and progressive enhancement.
 - Support the documented PHP/WordPress matrix; never require Composer in the installed plugin runtime.
 
+## License boundary
+
+`LICENSE.md` allows authorized 1Ecomm customer projects and deployed or compiled shopper applications, but prohibits redistribution of this reusable SDK/plugin or its derivatives. Preserve the notice in clones, packages, generated projects and documentation. Do not describe this repository as open source or grant broader rights in examples.
+
 ## Verification
 
 Run `php tests/run.php`, `./tests/docker-smoke.sh`, the sandbox WP-CLI journey and real Playwright UI journey when prerequisites exist. Assert rendered items/status and network result, not only shortcode presence. Never clone production data into a demo.

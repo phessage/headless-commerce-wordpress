@@ -1,5 +1,6 @@
 {
   "name": "@phessage/headless-commerce-wordpress-e2e",
+  "license": "SEE LICENSE IN LICENSE.md",
   "private": true,
   "scripts": {
     "test:e2e:live": "playwright test --config=playwright.live.config.ts"
