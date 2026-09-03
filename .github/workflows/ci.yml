@@ -15,9 +15,20 @@ jobs:
       - run: php -l src/CatalogClient.php
       - run: php -l src/Plugin.php
       - run: php tests/run.php
-  deployed-contract:
+  deployed-journey:
     runs-on: ubuntu-latest
+    env: {HEADLESS_E2E_ALLOCATOR_TOKEN: '${{ secrets.HEADLESS_E2E_ALLOCATOR_TOKEN }}'}
     steps:
       - uses: actions/checkout@v4
-      - name: Deployed non-mutating bootstrap probe
-        run: curl --fail --silent --show-error https://api.1ecomm.com/v1/headless/stores/01f5b02f-d7c0-42cd-b880-59f78ea70aa3/config >/dev/null
+      - name: Allocate isolated deployed fixture
+        run: bash .github/scripts/headless-fixture.sh allocate
+      - name: Start a real WordPress runtime
+        run: bash tests/docker-smoke.sh
+      - name: Run deployed catalog-to-order journey inside WordPress
+        run: docker compose run --rm -e HEADLESS_STORE_ID -e HEADLESS_PRODUCT_ID -e HEADLESS_PUBLISHABLE_KEY -e HEADLESS_API_URL cli wp eval-file wp-content/plugins/onecomm-headless/tests/live.php
+      - name: Release isolated deployed fixture
+        if: always()
+        run: bash .github/scripts/headless-fixture.sh release
+      - name: Stop WordPress runtime
+        if: always()
+        run: docker compose down --volumes

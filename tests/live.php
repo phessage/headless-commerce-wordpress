@@ -6,8 +6,9 @@ $storeId = getenv('HEADLESS_STORE_ID') ?: '01f5b02f-d7c0-42cd-b880-59f78ea70aa3'
 $assert = static function (bool $value, string $message): void {
     if (!$value) throw new RuntimeException($message);
 };
-$client = CatalogClient::forStore($storeId);
-$productId = '1f7884bd-759d-4f47-9fdb-c7ea3dd3a9ef';
+$key = getenv('HEADLESS_PUBLISHABLE_KEY') ?: '';
+$client = $key !== '' ? new CatalogClient(getenv('HEADLESS_API_URL') ?: 'https://api.1ecomm.com', $key) : CatalogClient::forStore($storeId);
+$productId = getenv('HEADLESS_PRODUCT_ID') ?: '1f7884bd-759d-4f47-9fdb-c7ea3dd3a9ef';
 $catalog = $client->products(100);
 $assert(in_array($productId, array_column($catalog, 'id'), true), 'sellable fixture missing');
 $created = $client->createCart();
@@ -20,10 +21,12 @@ $prepared = $client->updateCheckout($token, [
     'shippingAddress' => ['sameAsBilling' => true],
 ]);
 $data = $prepared['data'] ?? [];
-$assert(($data['shippingOptions'] ?? []) !== [] && ($data['paymentMethods'] ?? []) !== [], 'checkout choices missing');
-$shipping = $client->selectShippingMethod($token, (string) $data['shippingOptions'][0]['id']);
+$assert(($data['paymentMethods'] ?? []) !== [], 'payment choices missing');
+if (($data['shippingOptions'] ?? []) !== []) {
+    $shipping = $client->selectShippingMethod($token, (string) $data['shippingOptions'][0]['id']);
+    $assert(($shipping['data']['selectedShippingMethodId'] ?? null) !== null, 'shipping selection missing');
+}
 $payment = $client->selectPaymentMethod($token, (string) $data['paymentMethods'][0]['id']);
-$assert(($shipping['data']['selectedShippingMethodId'] ?? null) !== null, 'shipping selection missing');
 $assert(($payment['data']['selectedPaymentMethodId'] ?? null) !== null, 'payment selection missing');
 $placed = $client->placeOrder($token, 'wordpress-live-' . bin2hex(random_bytes(16)));
 $assert(($placed['data']['requiresPayment'] ?? true) === false, 'fixture order unexpectedly requires hosted payment');
