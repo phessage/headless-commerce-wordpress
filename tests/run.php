@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-use Phessage\OneComm\CatalogClient; use Phessage\OneComm\Plugin;
+use Phessage\OneComm\CatalogClient; use Phessage\OneComm\Plugin; use Phessage\OneComm\WebhookVerifier; use Phessage\OneComm\WebhookVerificationException;
 $count = 0; $assert = function ($v, $m) use (&$count): void { $count++; if (!$v) throw new RuntimeException($m); };
 $response = static fn (array $body, int $status = 200): array => ['response' => ['code' => $status], 'body' => json_encode($body, JSON_THROW_ON_ERROR)];
 $uuid = '11111111-1111-4111-8111-111111111111'; $item = '22222222-2222-4222-8222-222222222222'; $choice = '33333333-3333-4333-8333-333333333333'; $token = 'hc_' . str_repeat('a', 43);
@@ -31,4 +31,6 @@ $html = Plugin::renderStorefront(12); $assert(str_contains($html, '&lt;Pack&gt;'
 $assert(str_contains($html, 'Add to cart') && str_contains($html, 'Check order status') && str_contains($html, 'admin-post.php') && str_contains($html, '_wpnonce'), 'secure form missing');
 $lookupSession = '11111111-2222-4333-8444-555555555555'; $_COOKIE['onecomm_lookup_session'] = $lookupSession; $GLOBALS['transients']['onecomm_order_lookup_' . hash('sha256', $lookupSession)] = $lookedUp['data'];
 $html = Plugin::renderStorefront(12); $assert(str_contains($html, 'Items: 1'), 'order item count did not use contract items array');
+$timestamp='1788480000';$envelope=['id'=>'delivery-1','event'=>'order.paid','installationId'=>null,'applicationId'=>'app-1','siteId'=>'site-1','occurredAt'=>'2026-09-04T00:00:00.000Z','data'=>['orderId'=>'order-1']];$raw=json_encode($envelope,JSON_THROW_ON_ERROR);$signature='sha256='.hash_hmac('sha256',$timestamp.'.'.$raw,'whsec_test_receiver_secret');$headers=['X-Headless-Webhook-Timestamp'=>$timestamp,'X-Headless-Webhook-Signature'=>$signature,'X-Headless-Webhook-Id'=>'delivery-1'];$claims=[];$verified=WebhookVerifier::verify($raw,$headers,'whsec_test_receiver_secret',function(string $id)use(&$claims):bool{$claims[]=$id;return true;},300,(int)$timestamp);$assert(($verified['data']['orderId']??null)==='order-1'&&$claims===['delivery-1'],'webhook verification failed');
+foreach([['invalid_signature',$raw.' ',$headers,fn()=>true,(int)$timestamp],['stale_timestamp',$raw,$headers,fn()=>true,(int)$timestamp+301],['replayed_delivery',$raw,$headers,fn()=>false,(int)$timestamp]]as[$reason,$body,$testHeaders,$claim,$now]){try{WebhookVerifier::verify($body,$testHeaders,'whsec_test_receiver_secret',$claim,300,$now);throw new RuntimeException('expected webhook rejection');}catch(WebhookVerificationException $e){$assert($e->reason===$reason,'wrong webhook rejection');}}
 echo $count . " assertions passed\n";

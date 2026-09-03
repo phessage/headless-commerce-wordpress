@@ -15,4 +15,4 @@ function sanitize_email($v) { return filter_var($v, FILTER_SANITIZE_EMAIL); } fu
 function admin_url($p) { return 'https://wordpress.test/wp-admin/' . $p; } function wp_nonce_field(...$x) { return '<input type="hidden" name="_wpnonce" value="nonce">'; }
 function is_ssl() { return true; } function check_admin_referer(...$x) {} function wp_get_referer() { return 'https://wordpress.test/shop'; } function home_url($p) { return 'https://wordpress.test' . $p; }
 function add_query_arg($k, $v, $url) { return $url . '?' . rawurlencode($k) . '=' . rawurlencode($v); } function wp_safe_redirect(...$x) { return true; }
-require __DIR__ . '/../src/CatalogClient.php'; require __DIR__ . '/../src/Plugin.php';
+require __DIR__ . '/../src/CatalogClient.php'; require __DIR__ . '/../src/WebhookVerifier.php'; require __DIR__ . '/../src/Plugin.php';
