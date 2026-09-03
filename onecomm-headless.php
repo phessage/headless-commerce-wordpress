@@ -4,7 +4,7 @@
  * Description: Server-rendered catalog, anonymous cart, checkout preparation and non-hosted pending orders for the 1Ecomm headless API.
  * Version: 0.2.0-preview.1
  * Requires PHP: 8.1
- * License: Proprietary
+ * License: 1Ecomm Customer Use License 1.0
  */
 declare(strict_types=1);
 if (!defined('ABSPATH')) exit;
