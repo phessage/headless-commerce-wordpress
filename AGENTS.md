@@ -4,7 +4,7 @@ Read `README.md`, the plugin bootstrap, `src/*`, block metadata/editor code, Doc
 
 ## Boundary and contract
 
-This WordPress plugin renders the headless preview server-side. `onecomm_store_id` is the primary setting; bootstrap supplies public runtime values. Canonical API truth is `phessage/ecommerce-service/contracts/headless-commerce-v1.openapi.yaml`.
+This WordPress plugin renders the headless preview server-side. `onecomm_store_id` is the primary setting; bootstrap supplies public runtime values. Canonical API truth is `https://www.1ecomm.com/headless-commerce/openapi.yaml`.
 
 Preserve WordPress nonce/CSRF validation, capability checks for settings, key-derived tenant scope, fixed upstream paths, cart HttpOnly/SameSite cookie, server-side lookup transient and neutral lookup failure. Never place order email, cart token or lookup proof in redirect URLs/logs. Guest order count is `count($order['items'])`; there is no `itemCount` field.
 
