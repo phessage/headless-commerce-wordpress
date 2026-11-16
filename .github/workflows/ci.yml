@@ -1,16 +1,22 @@
 name: CI
-on: [push, pull_request]
+on:
+  # Public repository on the organisation's self-hosted runners. Pull requests
+  # (including any from forks) never trigger a run: CI runs only for pushes to
+  # main, release tags and manual dispatch by a maintainer.
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
 permissions: {contents: read}
 jobs:
   php:
     strategy:
       matrix:
         php: ['8.1', '8.2', '8.3', '8.4']
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, docker-services]
+    container: php:${{ matrix.php }}-cli
     steps:
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with: {php-version: '${{ matrix.php }}'}
       - run: php -l onecomm-headless.php
       - run: php -l src/CatalogClient.php
       - run: php -l src/Plugin.php
@@ -20,7 +26,7 @@ jobs:
     # deployed journey cannot allocate a fixture there. It is skipped for forks
     # by design and stays fail-closed for every trusted run, including main.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, docker-services]
     env: {HEADLESS_E2E_ALLOCATOR_TOKEN: '${{ secrets.HEADLESS_E2E_ALLOCATOR_TOKEN }}'}
     steps:
       - uses: actions/checkout@v4
